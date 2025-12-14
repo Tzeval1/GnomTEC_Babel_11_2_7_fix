@@ -1,6 +1,6 @@
 ﻿-- **********************************************************************
 -- GnomTEC Babel
--- Version: 10.2.0.31
+-- Version: 11.2.7
 -- Author: Peter Jack
 -- URL: http://www.gnomtec.de/
 -- **********************************************************************
@@ -235,8 +235,8 @@ local addonDataObject =	{
 -- ----------------------------------------------------------------------
 -- Startup initialization
 -- ----------------------------------------------------------------------
-
-GnomTEC_Babel = LibStub("AceAddon-3.0"):NewAddon("GnomTEC_Babel", "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0")
+local coreFrame = CreateFrame("Frame");
+GnomTEC_Babel = LibStub("AceAddon-3.0"):NewAddon(coreFrame, "GnomTEC_Babel", "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0")
 LibStub("AceConfig-3.0"):RegisterOptionsTable("GnomTEC Babel Main", optionsMain)
 LibStub("AceConfig-3.0"):RegisterOptionsTable("GnomTEC Babel Languages", optionsLanguages)
 LibStub("AceConfigDialog-3.0"):AddToBlizOptions("GnomTEC Babel Main", "GnomTEC Babel");
@@ -348,14 +348,16 @@ end
 -- ----------------------------------------------------------------------
 -- Hook functions
 -- ----------------------------------------------------------------------
-function GnomTEC_Babel:Translate(msg, chatType, languageID, channel)	
+
+
+function GnomTEC_Babel:SendChatMessage(msg, chatType, languageID, channel)
 	if ((chatType == "SAY") or (chatType == "YELL")) then
 		-- check if we know this language yet, when not will be reset to common
 		GnomTEC_Babel:SetLanguage(GnomTEC_Babel_Options["LanguageID"])
 		languageID = GnomTEC_Babel_Options["LanguageID"]
 		if (GnomTEC_Babel_Options["Enabled"]) then
 			if ((not languageID) or (LANGUAGE_ORCISH == languageID) or (LANGUAGE_COMMON == languageID)) then
-				self.hooks.SendChatMessage(msg,chatType,nil, channel)
+				self.hooks[C_ChatInfo].SendChatMessage(msg,chatType,nil, channel)
 			else
 				local maxlen				
 				if (languageID < 0) then
@@ -366,9 +368,9 @@ function GnomTEC_Babel:Translate(msg, chatType, languageID, channel)
 	
 				if (string.len(msg) <= maxlen) then
 					if (languageID < 0) then
-						self.hooks.SendChatMessage("["..GnomTEC_Babel_Options["AdditionalLanguages"][-languageID].."] "..msg,chatType,nil, channel)
+						self.hooks[C_ChatInfo].SendChatMessage("["..GnomTEC_Babel_Options["AdditionalLanguages"][-languageID].."] "..msg,chatType,nil, channel)
 					else				
-						self.hooks.SendChatMessage("["..GnomTEC_Babel:SetLanguage(languageID).."] "..msg,chatType,nil, channel)
+						self.hooks[C_ChatInfo].SendChatMessage("["..GnomTEC_Babel:SetLanguage(languageID).."] "..msg,chatType,nil, channel)
 					end
 				else
 					local m = ""
@@ -388,27 +390,27 @@ function GnomTEC_Babel:Translate(msg, chatType, languageID, channel)
 								w = ""
 							end
 							if (languageID < 0) then
-								self.hooks.SendChatMessage("["..GnomTEC_Babel_Options["AdditionalLanguages"][-languageID].."] "..m,chatType,nil, channel)
+								self.hooks[C_ChatInfo].SendChatMessage("["..GnomTEC_Babel_Options["AdditionalLanguages"][-languageID].."] "..m,chatType,nil, channel)
 							else				
-								self.hooks.SendChatMessage("["..GnomTEC_Babel:SetLanguage(languageID).."] "..m,chatType,nil, channel)
+								self.hooks[C_ChatInfo].SendChatMessage("["..GnomTEC_Babel:SetLanguage(languageID).."] "..m,chatType,nil, channel)
 							end
 							m = w
 						end
 					end
 					if ("" ~= m) then
 						if (languageID < 0) then
-							self.hooks.SendChatMessage("["..GnomTEC_Babel_Options["AdditionalLanguages"][-languageID].."] "..m,chatType,nil, channel)
+							self.hooks[C_ChatInfo].SendChatMessage("["..GnomTEC_Babel_Options["AdditionalLanguages"][-languageID].."] "..m,chatType,nil, channel)
 						else				
-							self.hooks.SendChatMessage("["..GnomTEC_Babel:SetLanguage(languageID).."] "..m,chatType,nil, channel)
+							self.hooks[C_ChatInfo].SendChatMessage("["..GnomTEC_Babel:SetLanguage(languageID).."] "..m,chatType,nil, channel)
 						end
 					end
 				end								
 			end
 		else
-			self.hooks.SendChatMessage(msg,chatType,languageID, channel)
+			self.hooks[C_ChatInfo].SendChatMessage(msg,chatType,languageID, channel)
 		end
 	else
-		self.hooks.SendChatMessage(msg,chatType,languageID, channel)
+		self.hooks[C_ChatInfo].SendChatMessage(msg,chatType,languageID, channel)
 	end
 end
 
@@ -419,6 +421,7 @@ end
 		tooltip:AddLine("GnomTEC Babel",1.0,1.0,1.0)
 		tooltip:AddLine(L["L_LDB_HINT"],0.0,1.0,0.0)
 	end	
+	
 	
 -- ----------------------------------------------------------------------
 -- Addon OnInitialize, OnEnable and OnDisable
@@ -434,10 +437,8 @@ end
 
 function GnomTEC_Babel:OnEnable()
     -- Called when the addon is enabled
-
 	GnomTEC_LogMessage(LOG_INFO, "GnomTEC_Babel Enabled")
-	self:RawHook("SendChatMessage","Translate",true)
-
+	self:RawHook(C_ChatInfo, "SendChatMessage", true)
 	-- Initialize options which are propably not valid because they are new added in new versions of addon
 	if (nil == GnomTEC_Babel_Options["LanguageSelectorEnabled"]) then
 		GnomTEC_Babel_Options["LanguageSelectorEnabled"] = GnomTEC_Babel_Options["Enabled"]
